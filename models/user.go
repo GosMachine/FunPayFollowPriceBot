@@ -2,7 +2,7 @@ package models
 
 type User struct {
 	ID         uint         `gorm:"primaryKey"`
-	TelegramID int          `gorm:"unique"`
+	TelegramID int64        `gorm:"unique"`
 	RefreshKD  int          `json:"refresh_kd"`
 	AllLots    []AllLots    `gorm:"foreignKey:user_id" json:"-"`
 	ActiveLots []ActiveLots `gorm:"foreignKey:user_id" json:"-"`
