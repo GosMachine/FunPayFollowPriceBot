@@ -1,7 +1,11 @@
 package models
 
+import "gorm.io/gorm"
+
 type Support struct {
-	ID         uint `gorm:"primaryKey"`
-	TelegramID int  `json:"TelegramID"`
+	gorm.Model
+	ID         uint  `gorm:"primaryKey"`
+	TelegramID int64 `json:"TelegramID"`
 	Message    string
+	Status     bool
 }

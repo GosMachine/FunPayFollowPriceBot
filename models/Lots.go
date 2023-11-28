@@ -1,8 +1,12 @@
 package models
 
-import "github.com/lib/pq"
+import (
+	"github.com/lib/pq"
+	"gorm.io/gorm"
+)
 
 type Lot struct {
+	gorm.Model
 	ID          uint    `gorm:"primaryKey"`
 	Category    string  `json:"category"`
 	Server      string  `json:"server"`
@@ -14,6 +18,7 @@ type Lot struct {
 }
 
 type AllLots struct {
+	gorm.Model
 	ID       uint           `gorm:"primaryKey"`
 	UserID   uint           `json:"UserID"`
 	Lot      string         `json:"lot"`
@@ -21,6 +26,7 @@ type AllLots struct {
 	MaxPrice float64        `json:"maxPrice"`
 }
 type ActiveLots struct {
+	gorm.Model
 	ID       uint           `gorm:"primaryKey"`
 	UserID   uint           `json:"UserID"`
 	Lot      string         `json:"lot"`

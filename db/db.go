@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"gin_test/logs"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -11,6 +12,7 @@ import (
 var (
 	Db    *gorm.DB
 	Redis *redis.Client
+	Ctx   = context.Background()
 )
 
 func init() {
