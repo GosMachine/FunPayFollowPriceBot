@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	err := db.Db.AutoMigrate(&models.Lot{}, &models.User{}, &models.AllLots{}, &models.ActiveLots{}, &models.Support{})
+	err := db.Db.AutoMigrate(&models.Lot{}, &models.User{}, &models.AllLots{}, &models.Support{})
 	if err != nil {
 		logs.Logger.Error("", zap.Error(err))
 	}

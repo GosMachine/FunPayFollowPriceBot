@@ -39,6 +39,8 @@ func handleCommand(message *tgbotapi.Message) {
 		handleSupport(chatID, strChatID)
 	case "Настройки":
 		handleSettings(chatID, strChatID)
+	case "Мои игры":
+		handleMyGames(chatID, strChatID)
 	default:
 		handleMessageText(chatID, state, message.Text, strChatID)
 	}
