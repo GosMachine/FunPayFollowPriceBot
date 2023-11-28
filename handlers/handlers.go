@@ -45,3 +45,4 @@ func HandleMenu(chatID int64, text string) tgbotapi.MessageConfig {
 //TODO кэширование
 //TODO ускорение горутинами
 //TODO логирование
+//TODO сделать env file
