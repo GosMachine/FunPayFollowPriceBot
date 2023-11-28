@@ -5,9 +5,9 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - monitoring
+      - telegram
     volumes:
-      - redis_data:/data
+      - redis_data:/funpayTg/data
 
   postgres:
     image: postgres
@@ -18,12 +18,12 @@ services:
       POSTGRES_PASSWORD: 12345tgv
       POSTGRES_DB: FunPayFollowBot
     networks:
-      - monitoring
+      - telegram
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
 networks:
-  monitoring:
+  telegram:
 
 volumes:
   redis_data:
