@@ -17,7 +17,8 @@ func handleMyGames(chatID int64, strChatID string) {
 	var keyboard tgbotapi.InlineKeyboardMarkup
 	user := utils.UserCache(chatID, strChatID)
 	var rows []tgbotapi.InlineKeyboardButton
-	rows = append(rows, tgbotapi.NewInlineKeyboardButtonData("Добавить игру", "Add a game"))
+	keyboard.InlineKeyboard = append(keyboard.InlineKeyboard,
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Добавить игру", "Add a game")))
 	circle := "🔴"
 	for _, item := range user.AllLots {
 		if item.Active {
@@ -25,8 +26,14 @@ func handleMyGames(chatID int64, strChatID string) {
 		}
 		btn := tgbotapi.NewInlineKeyboardButtonData(item.Name+circle, item.Name)
 		rows = append(rows, btn)
+		if len(rows)%2 == 0 {
+			keyboard.InlineKeyboard = append(keyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(rows...))
+			rows = []tgbotapi.InlineKeyboardButton{}
+		}
 	}
-	keyboard = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(rows...))
+	if len(rows) > 0 {
+		keyboard.InlineKeyboard = append(keyboard.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(rows...))
+	}
 	msg.ReplyMarkup = keyboard
 	utils.SendMessage(msg)
 }
@@ -99,5 +106,3 @@ func handleAddAGameText(chatID int64, text, strChatID string) {
 		}
 	}
 }
-
-//TODO чтоб выводились красиво а не в 1 линию(мб пагинацию)
