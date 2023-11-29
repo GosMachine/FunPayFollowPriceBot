@@ -18,8 +18,12 @@ func handleMyGames(chatID int64, strChatID string) {
 	user := utils.UserCache(chatID, strChatID)
 	var rows []tgbotapi.InlineKeyboardButton
 	rows = append(rows, tgbotapi.NewInlineKeyboardButtonData("Добавить игру", "Add a game"))
+	circle := "🔴"
 	for _, item := range user.AllLots {
-		btn := tgbotapi.NewInlineKeyboardButtonData(item.Lot, item.Lot+"12")
+		if item.Active {
+			circle = "🟢"
+		}
+		btn := tgbotapi.NewInlineKeyboardButtonData(item.Name+circle, item.Name)
 		rows = append(rows, btn)
 	}
 	keyboard = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(rows...))
@@ -31,7 +35,7 @@ func handleAddAGame(chatID int64, strChatID string) {
 	user := utils.UserCache(chatID, strChatID)
 	msg := tgbotapi.NewMessage(chatID, "Максимум ты можешь отслеживать 10 игр")
 	if len(user.AllLots) <= 10 {
-		msg.Text = "Напиши ссылку на игру которую ты хочешь остлеживать. Пример: https://funpay.com/chips/192/"
+		msg.Text = "Напиши название как эта игра будет отображатсья в списке отслеживаемых игр"
 		db.Redis.Set(db.Ctx, "State:"+strChatID, "Добавить игру", time.Hour)
 	}
 	utils.SendMessage(msg)
@@ -42,7 +46,15 @@ func handleAddAGameText(chatID int64, text, strChatID string) {
 	game := db.Redis.Get(db.Ctx, "game:"+strChatID).Val()
 	servers := db.Redis.LRange(db.Ctx, "servers:"+strChatID, 0, -1).Val()
 	maxPrice := db.Redis.Get(db.Ctx, "maxPrice:"+strChatID).Val()
+	name := db.Redis.Get(db.Ctx, "name:"+strChatID).Val()
 	switch {
+	case name == "":
+		msg := tgbotapi.NewMessage(chatID, "Error: Введи название от 3 до 9 символов")
+		if len(text) <= 9 && len(text) >= 3 {
+			db.Redis.Set(db.Ctx, "name:"+strChatID, text, time.Hour)
+			msg.Text = "Напиши ссылку на игру которую ты хочешь остлеживать. Пример: https://funpay.com/chips/192/"
+		}
+		utils.SendMessage(msg)
 	case game == "":
 		msg := tgbotapi.NewMessage(chatID, "Error: Попробуй снова. Пример: https://funpay.com/chips/192/")
 		if re.MatchString(text) {
@@ -73,6 +85,7 @@ func handleAddAGameText(chatID int64, text, strChatID string) {
 			newLot := models.AllLots{
 				UserID:   user.ID,
 				Lot:      game,
+				Name:     name,
 				Servers:  servers,
 				MaxPrice: maxPriceFloat,
 			}
@@ -80,11 +93,11 @@ func handleAddAGameText(chatID int64, text, strChatID string) {
 				db.Db.Create(&newLot)
 				user.AllLots = append(user.AllLots, newLot)
 				db.Redis.Set(db.Ctx, "UserData:"+strChatID, utils.EncodeUserData(user), time.Hour)
-				db.Redis.Del(db.Ctx, "maxPrice:"+strChatID, "game:"+strChatID, "servers:"+strChatID, "State:"+strChatID)
+				db.Redis.Del(db.Ctx, "maxPrice:"+strChatID, "game:"+strChatID, "servers:"+strChatID,
+					"State:"+strChatID, "name:"+strChatID)
 			}(user, newLot, strChatID)
 		}
 	}
 }
 
-//TODO добавить имя, кружочки активности возле имени
 //TODO чтоб выводились красиво а не в 1 линию(мб пагинацию)

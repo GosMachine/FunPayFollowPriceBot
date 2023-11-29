@@ -21,7 +21,9 @@ type AllLots struct {
 	gorm.Model
 	ID       uint `gorm:"primaryKey"`
 	UserID   uint
+	Name     string
 	Lot      string
 	Servers  pq.StringArray `gorm:"type:text[]" json:"servers"`
 	MaxPrice float64        `json:"maxPrice"`
+	Active   bool
 }
