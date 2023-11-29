@@ -34,9 +34,6 @@ func EditInlineReplyMarkup(chatID int64, messageID int, replyMarkup tgbotapi.Inl
 }
 
 func GetState(strChatID string) string {
-	state, err := db.Redis.Get(db.Ctx, "State:"+strChatID).Result()
-	if err == nil && state != "" {
-		db.Redis.Del(db.Ctx, "State:"+strChatID)
-	}
+	state, _ := db.Redis.Get(db.Ctx, "State:"+strChatID).Result()
 	return state
 }

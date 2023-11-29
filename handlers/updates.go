@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"gin_test/utils"
+	"gin_test/db"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"strconv"
 )
@@ -22,16 +22,18 @@ func handleCallbackQuery(update tgbotapi.Update) {
 	strChatID := strconv.Itoa(int(chatID))
 	//messageID := callback.Message.MessageID
 	data := callback.Data
+	db.Redis.Del(db.Ctx, "State:"+strChatID)
 	switch data {
 	case "Change KD":
 		handleChangeKD(chatID, strChatID)
+	case "Add a game":
+		handleAddAGame(chatID, strChatID)
 	}
 }
 
 func handleCommand(message *tgbotapi.Message) {
 	chatID := message.Chat.ID
 	strChatID := strconv.Itoa(int(chatID))
-	state := utils.GetState(strChatID)
 	switch message.Text {
 	case "/start":
 		handleStart(chatID, strChatID)
@@ -42,6 +44,6 @@ func handleCommand(message *tgbotapi.Message) {
 	case "Мои игры":
 		handleMyGames(chatID, strChatID)
 	default:
-		handleMessageText(chatID, state, message.Text, strChatID)
+		handleMessageText(chatID, message.Text, strChatID)
 	}
 }

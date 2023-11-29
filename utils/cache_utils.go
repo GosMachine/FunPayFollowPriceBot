@@ -20,7 +20,7 @@ func UserCache(chatID int64, strChatID string) *models.User {
 	}
 
 	var user models.User
-	db.Db.First(&user, "telegram_id = ?", chatID)
+	db.Db.Preload("AllLots").Where("telegram_id = ?", chatID).First(&user)
 	if user.TelegramID != 0 {
 		db.Redis.Set(db.Ctx, "UserData:"+strChatID, EncodeUserData(&user), time.Hour)
 	}

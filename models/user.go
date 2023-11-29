@@ -9,4 +9,5 @@ type User struct {
 	RefreshKD  int   `json:"refresh_kd"`
 	Premium    bool
 	Admin      bool
+	AllLots    []AllLots `gorm:"foreignKey:UserID"`
 }

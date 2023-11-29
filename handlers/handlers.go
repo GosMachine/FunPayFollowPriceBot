@@ -8,18 +8,22 @@ import (
 	"time"
 )
 
-func handleMessageText(chatID int64, state, text, strChatID string) {
+func handleMessageText(chatID int64, text, strChatID string) {
+	state := utils.GetState(strChatID)
 	switch state {
 	case "Поддержка":
 		handleSupportText(chatID, text, strChatID)
 	case "Change KD":
 		handleChangeKDText(chatID, text, strChatID)
+	case "Добавить игру":
+		handleAddAGameText(chatID, text, strChatID)
 	default:
 		utils.SendMessage(tgbotapi.NewMessage(chatID, "Неизвестная команда"))
 	}
 }
 
 func handleStart(chatID int64, strChatID string) {
+	db.Redis.Del(db.Ctx, "State:"+strChatID)
 	user := utils.UserCache(chatID, strChatID)
 	utils.SendMessage(HandleMenu(chatID, "Добро пожаловать"))
 	if user.TelegramID == 0 {

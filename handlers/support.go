@@ -16,6 +16,7 @@ func handleSupportText(chatID int64, text, strChatID string) {
 	db.Db.Create(&newReq)
 	utils.SendMessage(tgbotapi.NewMessage(chatID, "Успешно отправлено"))
 	db.Redis.Set(db.Ctx, "SupportKD:"+strChatID, "kd", time.Minute*30)
+	db.Redis.Del(db.Ctx, "State:"+strChatID)
 }
 
 func handleSupport(chatID int64, strChatID string) {
