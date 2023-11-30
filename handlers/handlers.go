@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func handleMessageText(chatID int64, text, strChatID string) {
+func handleMessageText(chatID int64, strChatID, text string) {
 	state := utils.GetState(strChatID)
 	switch state {
 	case "Поддержка":
@@ -17,6 +17,14 @@ func handleMessageText(chatID int64, text, strChatID string) {
 		handleChangeKDText(chatID, text, strChatID)
 	case "Добавить игру":
 		handleAddAGameText(chatID, text, strChatID)
+	case "change lot name":
+
+	case "change lot link":
+
+	case "change lot servers":
+		handleLotSettingsServers(chatID, text, strChatID)
+	case "change lot maxPrice":
+
 	default:
 		utils.SendMessage(tgbotapi.NewMessage(chatID, "Неизвестная команда"))
 	}
@@ -50,3 +58,4 @@ func HandleMenu(chatID int64, text string) tgbotapi.MessageConfig {
 //TODO ускорение горутинами
 //TODO логирование
 //TODO сделать env file
+//TODO jaeger затестить

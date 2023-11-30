@@ -29,3 +29,5 @@ func handleSupport(chatID int64, strChatID string) {
 		db.Redis.Set(db.Ctx, "State:"+strChatID, "Поддержка", time.Hour)
 	}
 }
+
+//TODO сделать поддержку

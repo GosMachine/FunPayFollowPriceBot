@@ -16,18 +16,27 @@ func AddButtonsToRow(buttons ...string) []tgbotapi.KeyboardButton {
 	return row
 }
 
-func SendMessage(msg tgbotapi.MessageConfig) tgbotapi.Message {
-	sentMsg, err := tg.Bot.Send(msg)
+func sendMessage(config tgbotapi.Chattable) tgbotapi.Message {
+	sentMsg, err := tg.Bot.Send(config)
 	if err != nil {
 		logs.Logger.Error("", zap.Error(err))
 	}
 	return sentMsg
 }
 
-func EditInlineReplyMarkup(chatID int64, messageID int, replyMarkup tgbotapi.InlineKeyboardMarkup) {
-	editMsg := tgbotapi.NewEditMessageReplyMarkup(chatID, messageID, replyMarkup)
+func SendMessage(msg tgbotapi.MessageConfig) tgbotapi.Message {
+	return sendMessage(msg)
+}
 
-	_, err := tg.Bot.Send(editMsg)
+func SendEditMessage(msg tgbotapi.EditMessageTextConfig) tgbotapi.Message {
+	return sendMessage(msg)
+}
+
+func EditMessage(chatID int64, messageID int, newText string, newButtons tgbotapi.InlineKeyboardMarkup) {
+	msg := tgbotapi.NewEditMessageText(chatID, messageID, newText)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.ReplyMarkup = &newButtons
+	_, err := tg.Bot.Send(msg)
 	if err != nil {
 		logs.Logger.Error("", zap.Error(err))
 	}

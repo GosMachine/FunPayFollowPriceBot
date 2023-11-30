@@ -4,6 +4,7 @@ import (
 	"gin_test/db"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"strconv"
+	"strings"
 )
 
 func HandleUpdates(updates tgbotapi.UpdatesChannel) {
@@ -20,14 +21,21 @@ func handleCallbackQuery(update tgbotapi.Update) {
 	callback := update.CallbackQuery
 	chatID := callback.Message.Chat.ID
 	strChatID := strconv.Itoa(int(chatID))
-	//messageID := callback.Message.MessageID
+	messageID := callback.Message.MessageID
 	data := callback.Data
+	var substring string
 	db.Redis.Del(db.Ctx, "State:"+strChatID)
+	if strings.HasPrefix(data, "lotSettings:") {
+		substring = data[len("lotSettings:"):]
+		data = "lotSettings"
+	}
 	switch data {
 	case "Change KD":
 		handleChangeKD(chatID, strChatID)
 	case "Add a game":
 		handleAddAGame(chatID, strChatID)
+	case "lotSettings":
+		handleLotSettingsCallBack(chatID, messageID, strChatID, substring)
 	}
 }
 
@@ -42,8 +50,8 @@ func handleCommand(message *tgbotapi.Message) {
 	case "Настройки":
 		handleSettings(chatID, strChatID)
 	case "Мои игры":
-		handleMyGames(chatID, strChatID)
+		handleMyGames(chatID, strChatID, 0)
 	default:
-		handleMessageText(chatID, message.Text, strChatID)
+		handleMessageText(chatID, strChatID, message.Text)
 	}
 }

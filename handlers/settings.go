@@ -23,9 +23,9 @@ func handleSettings(chatID int64, strChatID string) {
 
 func handleChangeKD(chatID int64, strChatID string) {
 	user := utils.UserCache(chatID, strChatID)
-	msg := tgbotapi.NewMessage(chatID, "Enter a number from 30 to 180 minutes (Buy premium to update every 5 minutes)")
+	msg := tgbotapi.NewMessage(chatID, "Введите число от 30 до 180 минут (Купите премиум чтобы обновлять каждые 5 минут)")
 	if user.Premium {
-		msg = tgbotapi.NewMessage(chatID, "Enter a number from 5 to 180 minutes")
+		msg.Text = "Введите число от 5 до 180 минут"
 	}
 	utils.SendMessage(msg)
 	db.Redis.Set(db.Ctx, "State:"+strChatID, "Change KD", time.Hour)

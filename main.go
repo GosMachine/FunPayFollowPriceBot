@@ -24,3 +24,7 @@ func main() {
 	}
 	handlers.HandleUpdates(updates)
 }
+
+//TODO сделать премиум
+//TODO сделать admin panel
+//TODO накидать смайликов(сделать красивого бота)
