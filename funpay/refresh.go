@@ -16,7 +16,7 @@ import (
 )
 
 func deleteOldLots(category string, allLots []models.Lot) {
-	if db.Redis.Get(db.Ctx, "KD:"+category).Val() == "true" {
+	if db.Redis.Get(db.Ctx, "DeleteKD:"+category).Val() == "true" {
 		return
 	}
 	var lots []models.Lot
@@ -40,7 +40,7 @@ func deleteOldLots(category string, allLots []models.Lot) {
 		}
 	}
 	lotsOperations(deleteLots, false)
-	db.Redis.Set(db.Ctx, "KD:"+category, "true", time.Minute*30)
+	db.Redis.Set(db.Ctx, "DeleteKD:"+category, "true", time.Minute*30)
 }
 
 func Refresh(lot string, maxPrice float64, servers []string) []models.Lot {
@@ -111,5 +111,3 @@ func lotsOperations(lots []models.Lot, insert bool) {
 func in(ss []string, s string) bool {
 	return strings.Contains(strings.Join(ss, ","), s)
 }
-
-//TODO сделать удаление лотов которых больше нет на сайте

@@ -20,8 +20,8 @@ func handleMyGames(chatID int64, strChatID string, messageID int) {
 	var rows []tgbotapi.InlineKeyboardButton
 	keyboard.InlineKeyboard = append(keyboard.InlineKeyboard,
 		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Добавить игру", "Add a game")))
-	circle := ": 🔴"
 	for _, item := range user.AllLots {
+		circle := ": 🔴"
 		if item.Active {
 			circle = ": 🟢"
 		}
