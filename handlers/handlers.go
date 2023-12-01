@@ -20,11 +20,11 @@ func handleMessageText(chatID int64, strChatID, text string) {
 	case "change lot name":
 		handleLotSettingsName(chatID, text, strChatID)
 	case "change lot link":
-
+		handleLotSettingsLink(chatID, text, strChatID)
 	case "change lot servers":
 		handleLotSettingsServers(chatID, text, strChatID)
 	case "change lot maxPrice":
-
+		handleLotSettingsMaxPrice(chatID, text, strChatID)
 	default:
 		utils.SendMessage(tgbotapi.NewMessage(chatID, "Неизвестная команда"))
 	}

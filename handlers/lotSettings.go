@@ -55,11 +55,15 @@ func handleLotSettingsCallBack(chatID int64, messageID int, strChatID, data stri
 		utils.SendMessage(tgbotapi.NewMessage(chatID, "Напиши название как эта игра будет отображатсья в списке отслеживаемых игр"))
 		setRedisData(strChatID, dataList[1], "change lot name", messageID)
 	case "Change maxPrice":
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "изменил цену"))
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Напиши максимальную стоимость, которую ты "+
+			"хочешь отслеживать. Пример: 3.5"))
+		setRedisData(strChatID, dataList[1], "change lot maxPrice", messageID)
 	case "Change active":
 		handleLotSettingsActive(chatID, strChatID, dataList[1], messageID, user)
 	case "Change lot":
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "изменил лот"))
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Напиши ссылку на игру которую ты хочешь остлеживать."+
+			" Пример: https://funpay.com/chips/192/"))
+		setRedisData(strChatID, dataList[1], "change lot link", messageID)
 	case "lotSettings":
 		handleLotSettings(chatID, messageID, user, dataList[1])
 	}
@@ -73,33 +77,57 @@ func handleLotSettingsDelete(chatID int64, strChatID, data string, messageID int
 	handleMyGames(chatID, strChatID, messageID)
 }
 
+func updateLotData(chatID int64, strChatID, cache string) {
+	user := utils.UserCache(chatID, strChatID)
+	data := db.Redis.Get(db.Ctx, "LotID:"+strChatID).Val()
+	messageID, _ := strconv.Atoi(db.Redis.Get(db.Ctx, "MessageID:"+strChatID).Val())
+	item := GetItem(user, data)
+	switch cache {
+	case "servers:":
+		item.Servers = db.Redis.LRange(db.Ctx, "servers:"+strChatID, 0, -1).Val()
+		db.Db.Model(&item).Update("Servers", item.Servers)
+	case "name:":
+		item.Name = db.Redis.Get(db.Ctx, "name:"+strChatID).Val()
+		db.Db.Model(&item).Update("Name", item.Name)
+	case "maxPrice:":
+		item.MaxPrice, _ = db.Redis.Get(db.Ctx, "maxPrice:"+strChatID).Float64()
+		db.Db.Model(&item).Update("max_price", item.MaxPrice)
+	case "game:":
+		item.Lot = db.Redis.Get(db.Ctx, "game:"+strChatID).Val()
+		db.Db.Model(&item).Update("lot", item.Lot)
+	}
+	db.Redis.Set(db.Ctx, "UserData:"+strChatID, utils.EncodeUserData(user), time.Hour)
+	handleLotSettings(chatID, messageID, user, data)
+	db.Redis.Del(db.Ctx, cache+strChatID, "LotID:"+strChatID, "State:"+strChatID, "MessageID:"+strChatID)
+}
+
 func handleLotSettingsName(chatID int64, text, strChatID string) {
 	if utils.LotName(text, strChatID) == nil {
-		user := utils.UserCache(chatID, strChatID)
-		data := db.Redis.Get(db.Ctx, "LotID:"+strChatID).Val()
-		messageID, _ := strconv.Atoi(db.Redis.Get(db.Ctx, "MessageID:"+strChatID).Val())
-		item := GetItem(user, data)
-		item.Name = db.Redis.Get(db.Ctx, "name:"+strChatID).Val()
-		db.Redis.Set(db.Ctx, "UserData:"+strChatID, utils.EncodeUserData(user), time.Hour)
-		handleLotSettings(chatID, messageID, user, data)
-		db.Db.Model(&item).Update("Name", item.Name)
-		db.Redis.Del(db.Ctx, "name:"+strChatID, "LotID:"+strChatID, "State:"+strChatID, "MessageID:"+strChatID)
+		updateLotData(chatID, strChatID, "name:")
 	} else {
 		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Введи название от 3 до 9 символов"))
 	}
 }
 
+func handleLotSettingsLink(chatID int64, text, strChatID string) {
+	if utils.LotGame(text, strChatID) == nil {
+		updateLotData(chatID, strChatID, "game:")
+	} else {
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Попробуй снова. Пример: https://funpay.com/chips/192/"))
+	}
+}
+
+func handleLotSettingsMaxPrice(chatID int64, text, strChatID string) {
+	if _, err := utils.LotMaxPrice(text, strChatID); err == nil {
+		updateLotData(chatID, strChatID, "maxPrice:")
+	} else {
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Введи число. Пример: 3.5"))
+	}
+}
+
 func handleLotSettingsServers(chatID int64, text, strChatID string) {
 	utils.LotServers(text, strChatID)
-	user := utils.UserCache(chatID, strChatID)
-	data := db.Redis.Get(db.Ctx, "LotID:"+strChatID).Val()
-	messageID, _ := strconv.Atoi(db.Redis.Get(db.Ctx, "MessageID:"+strChatID).Val())
-	item := GetItem(user, data)
-	item.Servers = db.Redis.LRange(db.Ctx, "servers:"+strChatID, 0, -1).Val()
-	db.Redis.Set(db.Ctx, "UserData:"+strChatID, utils.EncodeUserData(user), time.Hour)
-	handleLotSettings(chatID, messageID, user, data)
-	db.Db.Model(&item).Update("Servers", item.Servers)
-	db.Redis.Del(db.Ctx, "servers:"+strChatID, "LotID:"+strChatID, "State:"+strChatID, "MessageID:"+strChatID)
+	updateLotData(chatID, strChatID, "servers:")
 }
 
 func handleLotSettingsActive(chatID int64, strChatID, data string, messageID int, user *models.User) {
