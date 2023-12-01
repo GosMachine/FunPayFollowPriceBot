@@ -49,7 +49,7 @@ func HandleMenu(chatID int64, text string) tgbotapi.MessageConfig {
 	msg.ReplyMarkup = tgbotapi.NewReplyKeyboard(
 		utils.AddButtonsToRow("Поддержка", "Мои игры"),
 		utils.AddButtonsToRow("Настройки", "Премиум"),
-		utils.AddButtonsToRow("Старт", "Стоп"),
+		utils.AddButtonsToRow("Запустить", "Остановить"),
 	)
 	return msg
 }

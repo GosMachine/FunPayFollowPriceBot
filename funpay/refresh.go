@@ -2,6 +2,7 @@ package funpay
 
 import (
 	"errors"
+	"gin_test/db"
 	"gin_test/logs"
 	"gin_test/models"
 	"github.com/PuerkitoBio/goquery"
@@ -11,67 +12,39 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func refresh(database *gorm.DB, lot string, maxPrice float64, servers []string) []models.Lot {
-	url := lot
-	response, _ := http.Get(url)
-	defer response.Body.Close()
-	doc, _ := goquery.NewDocumentFromReader(response.Body)
-	var res []models.Lot
-	tcItems := doc.Find("a.tc-item")
-
-	tcItems.Each(func(i int, c *goquery.Selection) {
-		pricee := strings.TrimSpace(strings.Join(strings.Split(c.Find("div.tc-price").Text(), " "), ""))
-		price, _ := strconv.ParseFloat(pricee[:len(pricee)-3], 64)
-
-		if price <= maxPrice {
-			var newLot models.Lot
-			header := doc.Find(".tc-header")
-			header.Find("*").Each(func(i int, s *goquery.Selection) {
-				class := strings.Split(s.AttrOr("class", ""), " ")
-				text := strings.TrimSpace(s.Text())
-
-				switch class[0] {
-				case "tc-user":
-					newLot.Seller = text
-				case "tc-server":
-					newLot.Server = text
-				case "tc-price":
-					newLot.Price = price
-				case "tc-amount":
-					newLot.Amount = text
-				case "tc-desc":
-					newLot.Description = text
-				case "tc-side":
-					newLot.Side = text
-				}
-			})
-
-			if price <= maxPrice && (in(servers, newLot.Server) || newLot.Server == "" || newLot.Server == "Любой" || newLot.Server == "Any" || len(servers) == 0) {
-				var existingLot models.Lot
-				if err := database.Where(&newLot).First(&existingLot).Error; errors.Is(err, gorm.ErrRecordNotFound) {
-					database.Create(&newLot)
-					res = append(res, newLot)
-				}
+func deleteOldLots(category string, allLots []models.Lot) {
+	if db.Redis.Get(db.Ctx, "KD:"+category).Val() == "true" {
+		return
+	}
+	var lots []models.Lot
+	var deleteLots []models.Lot
+	if err := db.Db.Where("category = ?", category).Find(&lots).Error; err != nil {
+		logs.Logger.Error("", zap.Error(err))
+		return
+	}
+	for _, dbLot := range lots {
+		var found bool
+		for _, userLot := range allLots {
+			if dbLot.Category == userLot.Category && dbLot.Seller == userLot.Seller && dbLot.Amount == userLot.Amount &&
+				dbLot.Price == userLot.Price && dbLot.Description == userLot.Description &&
+				dbLot.Server == userLot.Server && dbLot.Side == userLot.Side && !found {
+				found = true
+				break
 			}
 		}
-	})
-
-	return res
+		if !found {
+			deleteLots = append(deleteLots, dbLot)
+		}
+	}
+	lotsOperations(deleteLots, false)
+	db.Redis.Set(db.Ctx, "KD:"+category, "true", time.Minute*30)
 }
 
-func in(ss []string, s string) bool {
-	return strings.Contains(strings.Join(ss, ","), s)
-}
-
-func refresho(database *gorm.DB, en bool, lot string, maxPrice float64, servers []string) []models.Lot {
-	url := lot
-	var response *http.Response
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("Accept-Language", "ru")
-	client := &http.Client{}
-	response, _ = client.Do(req)
+func Refresh(lot string, maxPrice float64, servers []string) []models.Lot {
+	response, _ := http.Get(lot)
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
@@ -80,49 +53,63 @@ func refresho(database *gorm.DB, en bool, lot string, maxPrice float64, servers 
 	}(response.Body)
 	doc, _ := goquery.NewDocumentFromReader(response.Body)
 	var res []models.Lot
+	var allLots []models.Lot
+	category := doc.Find(".content-with-cd").Find("h1").Text()
 	doc.Find("a.tc-item").Each(func(i int, c *goquery.Selection) {
-		pricee := strings.TrimSpace(strings.Join(strings.Split(c.Find("div.tc-price").Text(), " "), ""))
-		price, _ := strconv.ParseFloat(pricee[:len(pricee)-3], 64)
+		strPrice := strings.TrimSpace(strings.Join(strings.Split(c.Find("div.tc-price").Text(), " "), ""))
+		price, _ := strconv.ParseFloat(strPrice[:len(strPrice)-3], 64)
+
 		if price <= maxPrice {
-			var newLot models.Lot
-			contentDiv := doc.Find(".content-with-cd")
-			newLot.Category = contentDiv.Find("h1").Text()
-			header := doc.Find(".tc-header")
-			header.Find("*").Each(func(i int, s *goquery.Selection) {
+			newLot := models.Lot{Category: category}
+			doc.Find(".tc-header").Find("*").Each(func(i int, s *goquery.Selection) {
 				class := strings.Split(s.AttrOr("class", ""), " ")
-				text := strings.TrimSpace(s.Text())
-				if class[0] != "" && text != "" {
-					if class[0] == "tc-user" {
-						value := strings.TrimSpace(c.Find("div.media-user-name").Text())
-						newLot.Seller = value
-					} else if class[0] == "tc-server" {
-						value := strings.TrimSpace(c.Find("div.tc-server").Text())
-						newLot.Server = value
-					} else if class[0] == "tc-price" {
-						newLot.Price = price
-					} else if class[0] == "tc-amount" {
-						value := strings.TrimSpace(c.Find("div.tc-amount").Text())
-						newLot.Amount = value
-					} else if class[0] == "tc-desc" {
-						value := strings.TrimSpace(c.Find("div.tc-desc-text").Text())
-						newLot.Description = value
-					} else if class[0] == "tc-side" {
-						value := strings.TrimSpace(c.Find("div.tc-side").Text())
-						newLot.Side = value
-					}
+				switch class[0] {
+				case "tc-user":
+					newLot.Seller = strings.TrimSpace(c.Find("div.media-user-name").Text())
+				case "tc-server":
+					newLot.Server = strings.TrimSpace(c.Find("div.tc-server").Text())
+				case "tc-price":
+					newLot.Price = price
+				case "tc-amount":
+					newLot.Amount = strings.TrimSpace(c.Find("div.tc-amount").Text())
+				case "tc-desc":
+					newLot.Description = strings.TrimSpace(c.Find("div.tc-desc-text").Text())
+				case "tc-side":
+					newLot.Side = strings.TrimSpace(c.Find("div.tc-side").Text())
 				}
 			})
-			if in(servers, newLot.Server) || newLot.Server == "" || newLot.Server == "Любой" || newLot.Server == "Any" || len(servers) == 0 {
+			if in(servers, newLot.Server) || newLot.Server == "" || newLot.Server == "Любой" || len(servers) == 0 {
 				var existingLot models.Lot
-				if err := database.Where(&newLot).First(&existingLot).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						database.Create(&newLot)
-						res = append(res, newLot)
-					}
+				allLots = append(allLots, newLot)
+				if err := db.Db.Where(&newLot).First(&existingLot).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+					res = append(res, newLot)
 				}
 			}
-			newLot = models.Lot{}
 		}
 	})
+	deleteOldLots(category, allLots)
+	lotsOperations(res, true)
 	return res
 }
+
+// True == Insert, False == Delete
+func lotsOperations(lots []models.Lot, insert bool) {
+	if len(lots) == 0 {
+		return
+	}
+	if insert {
+		if err := db.Db.Create(&lots).Error; err != nil {
+			logs.Logger.Error("", zap.Error(err))
+		}
+	} else {
+		if err := db.Db.Delete(&lots).Error; err != nil {
+			logs.Logger.Error("", zap.Error(err))
+		}
+	}
+}
+
+func in(ss []string, s string) bool {
+	return strings.Contains(strings.Join(ss, ","), s)
+}
+
+//TODO сделать удаление лотов которых больше нет на сайте

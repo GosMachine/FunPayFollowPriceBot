@@ -51,6 +51,8 @@ func handleCommand(message *tgbotapi.Message) {
 		handleSettings(chatID, strChatID)
 	case "Мои игры":
 		handleMyGames(chatID, strChatID, 0)
+	case "Запустить":
+		handleStartRefreshBot(chatID, strChatID)
 	default:
 		handleMessageText(chatID, strChatID, message.Text)
 	}
