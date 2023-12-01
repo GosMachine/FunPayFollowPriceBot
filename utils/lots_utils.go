@@ -7,10 +7,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 func LotName(text, strChatID string) error {
-	if len(text) <= 9 && len(text) >= 3 {
+	runeCount := utf8.RuneCountInString(text)
+	fmt.Println(runeCount)
+	if runeCount >= 3 && runeCount <= 9 {
 		db.Redis.Set(db.Ctx, "name:"+strChatID, text, time.Hour)
 		return nil
 	}

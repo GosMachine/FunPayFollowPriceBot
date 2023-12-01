@@ -18,7 +18,7 @@ func handleMessageText(chatID int64, strChatID, text string) {
 	case "Добавить игру":
 		handleAddAGameText(chatID, text, strChatID)
 	case "change lot name":
-
+		handleLotSettingsName(chatID, text, strChatID)
 	case "change lot link":
 
 	case "change lot servers":

@@ -50,11 +50,10 @@ func handleLotSettingsCallBack(chatID int64, messageID int, strChatID, data stri
 	case "Change servers":
 		utils.SendMessage(tgbotapi.NewMessage(chatID, "Теперь напиши сервера, которые ты хочешь отслеживать."+
 			" Если их нет или ты хочешь отслеживать все сервера, напиши \"None\") Пример: Гром, Галакронд, Пиратская Бухта"))
-		db.Redis.Set(db.Ctx, "State:"+strChatID, "change lot servers", time.Hour)
-		db.Redis.Set(db.Ctx, "LotID:"+strChatID, dataList[1], time.Hour)
-		db.Redis.Set(db.Ctx, "MessageID:"+strChatID, messageID, time.Hour)
+		setRedisData(strChatID, dataList[1], "change lot servers", messageID)
 	case "Change name":
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "изменил имя"))
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Напиши название как эта игра будет отображатсья в списке отслеживаемых игр"))
+		setRedisData(strChatID, dataList[1], "change lot name", messageID)
 	case "Change maxPrice":
 		utils.SendMessage(tgbotapi.NewMessage(chatID, "изменил цену"))
 	case "Change active":
@@ -72,6 +71,22 @@ func handleLotSettingsDelete(chatID int64, strChatID, data string, messageID int
 	user.AllLots = append(user.AllLots[:indexToChange], user.AllLots[indexToChange+1:]...)
 	db.Redis.Set(db.Ctx, "UserData:"+strChatID, utils.EncodeUserData(user), time.Hour)
 	handleMyGames(chatID, strChatID, messageID)
+}
+
+func handleLotSettingsName(chatID int64, text, strChatID string) {
+	if utils.LotName(text, strChatID) == nil {
+		user := utils.UserCache(chatID, strChatID)
+		data := db.Redis.Get(db.Ctx, "LotID:"+strChatID).Val()
+		messageID, _ := strconv.Atoi(db.Redis.Get(db.Ctx, "MessageID:"+strChatID).Val())
+		item := GetItem(user, data)
+		item.Name = db.Redis.Get(db.Ctx, "name:"+strChatID).Val()
+		db.Redis.Set(db.Ctx, "UserData:"+strChatID, utils.EncodeUserData(user), time.Hour)
+		handleLotSettings(chatID, messageID, user, data)
+		db.Db.Model(&item).Update("Name", item.Name)
+		db.Redis.Del(db.Ctx, "name:"+strChatID, "LotID:"+strChatID, "State:"+strChatID, "MessageID:"+strChatID)
+	} else {
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Введи название от 3 до 9 символов"))
+	}
 }
 
 func handleLotSettingsServers(chatID int64, text, strChatID string) {
@@ -98,4 +113,10 @@ func handleLotSettingsActive(chatID int64, strChatID, data string, messageID int
 func GetItem(user *models.User, data string) *models.AllLots {
 	_, indexToChange := utils.FindAllLotsItem(user, data)
 	return &user.AllLots[indexToChange]
+}
+
+func setRedisData(strChatID, data, value string, messageID int) {
+	db.Redis.Set(db.Ctx, "State:"+strChatID, value, time.Hour)
+	db.Redis.Set(db.Ctx, "LotID:"+strChatID, data, time.Hour)
+	db.Redis.Set(db.Ctx, "MessageID:"+strChatID, messageID, time.Hour)
 }
