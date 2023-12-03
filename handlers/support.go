@@ -9,25 +9,25 @@ import (
 )
 
 func handleSupportText(chatID int64, text, strChatID string) {
+	utils.SendMessage(tgbotapi.NewMessage(chatID, "Успешно отправлено"))
 	newReq := models.Support{
 		TelegramID: chatID,
 		Message:    text,
 	}
 	db.Db.Create(&newReq)
-	utils.SendMessage(tgbotapi.NewMessage(chatID, "Успешно отправлено"))
 	db.Redis.Set(db.Ctx, "SupportKD:"+strChatID, "kd", time.Minute*30)
 	db.Redis.Del(db.Ctx, "State:"+strChatID)
 }
 
 func handleSupport(chatID int64, strChatID string) {
 	result, err := db.Redis.Get(db.Ctx, "SupportKD:"+strChatID).Result()
+	msg := tgbotapi.NewMessage(chatID, "Опишите вашу проблему")
 	if err == nil && result != "" {
-		utils.SendMessage(tgbotapi.NewMessage(chatID,
-			"В последние 30 минут вы уже отправляли сообщение в поддержку"))
+		msg.Text = "В последние 30 минут вы уже отправляли сообщение в поддержку"
 	} else {
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "Опишите вашу проблему"))
 		db.Redis.Set(db.Ctx, "State:"+strChatID, "Поддержка", time.Hour)
 	}
+	utils.SendMessage(msg)
 }
 
 //TODO сделать поддержку

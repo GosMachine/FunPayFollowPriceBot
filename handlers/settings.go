@@ -10,7 +10,6 @@ import (
 )
 
 func handleSettings(chatID int64, strChatID string) {
-	db.Redis.Del(db.Ctx, "State:"+strChatID)
 	user := utils.UserCache(chatID, strChatID)
 	msg := tgbotapi.NewMessage(chatID, "Текущий KD: "+strconv.Itoa(user.RefreshKD)+" мин")
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
@@ -19,6 +18,7 @@ func handleSettings(chatID int64, strChatID string) {
 		),
 	)
 	utils.SendMessage(msg)
+	db.Redis.Del(db.Ctx, "State:"+strChatID)
 }
 
 func handleChangeKD(chatID int64, strChatID string) {
@@ -35,16 +35,16 @@ func handleChangeKDText(chatID int64, text, strChatID string) {
 	user := utils.UserCache(chatID, strChatID)
 	minutes, err := strconv.Atoi(text)
 	if err != nil {
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Please enter a number"))
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Введите число"))
 		return
 	}
 	if user.Premium && (minutes < 5 || minutes > 180) {
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Please enter a number from 5 to 180"))
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Error: Введите число от 5 до 180"))
 		return
 	}
 
 	if !user.Premium && (minutes < 30 || minutes > 180) {
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "Enter a number from 30 to 180 minutes (Buy premium to update every 5 minutes)"))
+		utils.SendMessage(tgbotapi.NewMessage(chatID, "Введите число от 30 до 180 (Купите премиум чтобы обновлять каждые 5 минут)"))
 		return
 	}
 	utils.SendMessage(tgbotapi.NewMessage(chatID, fmt.Sprintf("Текущий KD: %s мин", text)))

@@ -14,11 +14,14 @@ var ticker *time.Ticker
 var tickerRunning bool
 
 func handleStopRefreshBot(chatID int64) {
+	msg := tgbotapi.NewMessage(chatID, "Успешно остановлено")
 	if ticker != nil && tickerRunning {
 		ticker.Stop()
 		tickerRunning = false
-		utils.SendMessage(tgbotapi.NewMessage(chatID, "Успешно остановлено"))
+	} else {
+		msg.Text = "Error: Не запущено"
 	}
+	utils.SendMessage(msg)
 }
 
 func handleStartRefreshBot(chatID int64, strChatID string) {

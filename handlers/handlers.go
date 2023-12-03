@@ -31,7 +31,6 @@ func handleMessageText(chatID int64, strChatID, text string) {
 }
 
 func handleStart(chatID int64, strChatID string) {
-	db.Redis.Del(db.Ctx, "State:"+strChatID)
 	user := utils.UserCache(chatID, strChatID)
 	utils.SendMessage(HandleMenu(chatID, "Добро пожаловать"))
 	if user.TelegramID == 0 {
@@ -41,6 +40,7 @@ func handleStart(chatID int64, strChatID string) {
 		}
 		db.Db.Create(&newUser)
 		db.Redis.Set(db.Ctx, "UserData:"+strChatID, utils.EncodeUserData(&newUser), time.Hour)
+		db.Redis.Del(db.Ctx, "State:"+strChatID)
 	}
 }
 
@@ -53,9 +53,3 @@ func HandleMenu(chatID int64, text string) tgbotapi.MessageConfig {
 	)
 	return msg
 }
-
-//TODO кэширование
-//TODO ускорение горутинами
-//TODO логирование
-//TODO сделать env file
-//TODO jaeger затестить

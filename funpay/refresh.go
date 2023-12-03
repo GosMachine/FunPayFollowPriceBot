@@ -87,8 +87,10 @@ func Refresh(lot string, maxPrice float64, servers []string) []models.Lot {
 			}
 		}
 	})
-	deleteOldLots(category, allLots)
-	lotsOperations(res, true)
+	go func(category string, allLots, res []models.Lot) {
+		deleteOldLots(category, allLots)
+		lotsOperations(res, true)
+	}(category, allLots, res)
 	return res
 }
 
